@@ -14,14 +14,15 @@ from flask import Flask, request
 from enum import Enum
 from pydantic import BaseModel
 import sqlite3
+import json
 from waitress import serve
 from uuid import uuid4
 
 app = Flask(__name__)
 
-con = sqlite3.connect("main.db")
+con = sqlite3.connect("main.db", check_same_thread=False)
 cur = con.cursor()
-cur.execute("CREATE TABLE IF NOT EXISTS login_data(tenant_id varchar(255), user_id varchar(255), origin varchar(255), status varchar(255), date timestamp, i_key varchar(255))")
+cur.execute("CREATE TABLE IF NOT EXISTS login_data(p_id integer primary key autoincrement, tenant_id text not null, user_id text not null, origin text not null, status text not null, date timestamp not null, i_key text not null)")
 
 class LoginStatus(str, Enum):
     success = 'success'
@@ -40,7 +41,20 @@ class LoginData(BaseModel):
 @app.route('/ingest_login_data', methods=['POST'])
 def ingest_login_data():
     login_data = LoginData(**request.json)
-    return login_data.model_dump()
+
+    data = cur.execute(f"SELECT * FROM login_data WHERE i_key=?", (login_data.i_key,)).fetchone()
+
+    if data:
+        print("Hit dup ikey returning existing data", data)
+        json_data = { "date": data[5], "i_key": data[6], "origin": data[3], "status": data[4], "tenant_id": data[1], "user_id": data[2] }
+        response_data = LoginData(**json_data)
+        return response_data.model_dump()
+    else:
+        print("Inserting new login data")
+        insert_params = (login_data.tenant_id, login_data.user_id, login_data.origin, login_data.status, login_data.date, login_data.i_key, )
+        cur.execute(f"INSERT INTO login_data VALUES (null, ?, ?, ?, ?, ?, ? )", insert_params)
+
+        return login_data.model_dump()
 
 @app.route('/suspicious_events', methods=['GET'])
 def suspicious_events():
