@@ -30,8 +30,12 @@ class LoginData(BaseModel):
     timestamp: datetime
 
 
-@app.route('/')
-def hello_world():
+@app.route('/ingest_login_data', methods=['POST'])
+def ingest_login_data():
+    return "hello world"
+
+@app.route('/suspicious_events', methods=['GET'])
+def suspicious_events():
     return "hello world"
 
 serve(app, host="0.0.0.0", port=5000)
