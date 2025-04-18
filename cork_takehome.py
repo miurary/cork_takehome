@@ -10,12 +10,18 @@
 # can enrich with threat score based on # of failed logins in last x minutes
 
 from datetime import datetime
-from flask import Flask
+from flask import Flask, request
 from enum import Enum
 from pydantic import BaseModel
+import sqlite3
 from waitress import serve
+from uuid import uuid4
 
 app = Flask(__name__)
+
+con = sqlite3.connect("main.db")
+cur = con.cursor()
+cur.execute("CREATE TABLE IF NOT EXISTS login_data(tenant_id varchar(255), user_id varchar(255), origin varchar(255), status varchar(255), date timestamp, i_key varchar(255))")
 
 class LoginStatus(str, Enum):
     success = 'success'
@@ -27,15 +33,17 @@ class LoginData(BaseModel):
     user_id: str
     origin: str
     status: LoginStatus
-    timestamp: datetime
+    date: datetime
+    i_key: str # idempotency key passed from client
 
 
 @app.route('/ingest_login_data', methods=['POST'])
 def ingest_login_data():
-    return "hello world"
+    login_data = LoginData(**request.json)
+    return login_data.model_dump()
 
 @app.route('/suspicious_events', methods=['GET'])
 def suspicious_events():
-    return "hello world"
+    return str(datetime.now()) + " " + str(uuid4())
 
 serve(app, host="0.0.0.0", port=5000)
