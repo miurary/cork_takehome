@@ -8,7 +8,7 @@ The API will be served at localhost:5000. I tested post requests using Postman. 
     "tenant_id": "1",
     "user_id": "2",
     "origin": "Portland, Oregon, United States",
-    "status": "fail",
+    "status": "fail", # takes "fail" or "success"
     "date": "2025-04-18 15:00:00",
     "i_key": "bdc54cf7-37e3-4015-adf5-a34f905f082f"
 }
